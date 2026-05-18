@@ -1,0 +1,80 @@
+QMainWindow {
+    background-color: #ffffff;
+    border: none;
+}
+
+QWidget#centralwidget {
+    background-color: #ffffff;
+    padding: 0px;
+    margin: 0px;
+}
+
+QWidget#widget {
+    background-color: #f5f5f5;
+    border-radius: 0px;
+    margin: 0px;
+    padding: 8px 0px;
+    border-right: 1px solid #e0e0e0;
+}
+
+QToolButton {
+    background-color: transparent;
+    border: none;
+    padding: 12px 8px;
+    font-size: 11px;
+    color: #666666;
+    white-space: nowrap;
+    margin: 2px 0px;
+    border-radius: 0px;
+    text-align: center;
+    min-width: 48px;
+    margin-left: 0px;
+}
+
+QToolButton:hover {
+    background-color: #e8e8e8;
+}
+
+QToolButton::pressed, QToolButton::checked {
+    background-color: #ffffff;
+    border-left: 3px inset #2ecc71;
+    color: #1890ff;
+}
+
+QStackedWidget {
+    background-color: #ffffff;
+    border-radius: 0px;
+    margin: 0px;
+    padding: 0px;
+}
+
+QWidget#pageStudent,
+QWidget#pageShedule,
+QWidget#pageFinance,
+QWidget#pageHonor,
+QWidget#pageSystemSetting {
+    background-color: #ffffff;
+}
+
+QPushButton {
+    background-color: #1890ff;
+    border: none;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+QPushButton:hover {
+    background-color: #096dd9;
+}
+
+QPushButton:pressed {
+    background-color: #0050b3;
+}
+
+QStatusBar {
+    background-color: #fafafa;
+    color: #666666;
+    border-top: 1px solid #e0e0e0;
+}

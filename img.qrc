@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>img/xueyuanxinxi.png</file>
+        <file>img/caiwuguanli.png</file>
+        <file>img/kechengguanli.png</file>
+        <file>img/rongyuqiang.png</file>
+        <file>img/xitongshezhi.png</file>
+        <file>style.qss</file>
+    </qresource>
+</RCC>
