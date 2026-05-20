@@ -1,6 +1,7 @@
 QMainWindow {
     background-color: #ffffff;
     border: none;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
 }
 
 QWidget#centralwidget {
@@ -54,6 +55,91 @@ QWidget#pageFinance,
 QWidget#pageHonor,
 QWidget#pageSystemSetting {
     background-color: #ffffff;
+}
+
+QTableWidget {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    gridline-color: #f0f0f0;
+    selection-background-color: #e6f7ff;
+    selection-color: #1890ff;
+    alternate-background-color: #fafafa;
+    border-right: none;
+}
+
+QTableWidget::item {
+    padding: 4px 8px;
+    border: none;
+}
+
+QTableWidget::item:selected {
+    background-color: #e6f7ff;
+    color: #1890ff;
+}
+
+QHeaderView::section {
+    background-color: #fafafa;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333333;
+    min-width: 70px;
+    white-space: nowrap;
+}
+
+QHeaderView::section:last {
+    border-right: none;
+}
+
+QHeaderView::section:hover {
+    background-color: #f0f0f0;
+}
+
+QScrollBar:vertical {
+    border: none;
+    background: #f5f5f5;
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #d9d9d9;
+    min-height: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #bfbfbf;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: #f5f5f5;
+    height: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #d9d9d9;
+    min-width: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #bfbfbf;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    border: none;
+    background: none;
 }
 
 QPushButton {

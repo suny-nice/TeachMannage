@@ -15,7 +15,14 @@ qt_add_executable(StudentMannageSystem
     mainwindow.ui
     database.cpp
     database.h
+    studentwidget.h studentwidget.cpp studentwidget.ui
+    addstudentdialog.h addstudentdialog.cpp
     ${RESOURCES}
+)
+
+target_include_directories(StudentMannageSystem
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(StudentMannageSystem

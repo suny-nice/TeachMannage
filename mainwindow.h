@@ -12,6 +12,8 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+class StudentWidget;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT

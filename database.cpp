@@ -109,55 +109,63 @@ bool Database::createTables()
         "password TEXT NOT NULL)";
     query.exec(sqlUsers);
     
-    qDebug() << "所有表创建完成";
+    // qDebug() << "所有表创建完成";
     return true;
 }
 
-bool Database::insertStudent(const QString& id, const QString& name, const QString& gender,
-                            const QString& birthday, const QString& join_date,
-                            const QString& study_goal, const QString& progress)
+bool Database::addStudent(const QString& id, const QString& name, const QString& gender,
+                          const QString& birthday, const QString& joinDate,
+                          const QString& studyGoal, const QString& progress,
+                          const QByteArray& photoData)
 {
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return false;
+    }
+
     QSqlQuery query;
-    query.prepare("INSERT INTO studentInfo (id, name, gender, birthday, join_date, study_goal, progress) "
-                  "VALUES (:id, :name, :gender, :birthday, :join_date, :study_goal, :progress)");
+    query.prepare("INSERT INTO studentInfo (id, name, gender, birthday, join_date, study_goal, progress, photo) "
+                  "VALUES (:id, :name, :gender, :birthday, :join_date, :study_goal, :progress, :photo)");
     query.bindValue(":id", id);
     query.bindValue(":name", name);
     query.bindValue(":gender", gender);
     query.bindValue(":birthday", birthday);
-    query.bindValue(":join_date", join_date);
-    query.bindValue(":study_goal", study_goal);
+    query.bindValue(":join_date", joinDate);
+    query.bindValue(":study_goal", studyGoal);
     query.bindValue(":progress", progress);
-    
+    query.bindValue(":photo", photoData);
+
     if (query.exec()) {
-        qDebug() << "学生信息插入成功:" << name;
+        qDebug() << "学生信息添加成功";
         return true;
     } else {
-        qDebug() << "学生信息插入失败:" << query.lastError().text();
+        qDebug() << "添加学生信息失败:" << query.lastError().text();
         return false;
     }
 }
 
 QList<QMap<QString, QVariant>> Database::getAllStudents()
 {
-    QList<QMap<QString, QVariant>> result;
-    QSqlQuery query("SELECT * FROM studentInfo ORDER BY id");
+    QList<QMap<QString, QVariant>> students;
     
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return students;
+    }
+
+    QSqlQuery query("SELECT * FROM studentInfo");
     while (query.next()) {
         QMap<QString, QVariant> student;
-        student["id"] = query.value("id").toString();
-        student["name"] = query.value("name").toString();
-        student["gender"] = query.value("gender").toString();
-        student["birthday"] = query.value("birthday").toString();
-        student["join_date"] = query.value("join_date").toString();
-        student["study_goal"] = query.value("study_goal").toString();
-        student["progress"] = query.value("progress").toString();
-        result.append(student);
+        student["id"] = query.value("id");
+        student["name"] = query.value("name");
+        student["gender"] = query.value("gender");
+        student["birthday"] = query.value("birthday");
+        student["join_date"] = query.value("join_date");
+        student["study_goal"] = query.value("study_goal");
+        student["progress"] = query.value("progress");
+        student["photo"] = query.value("photo");
+        students.append(student);
     }
-    
-    return result;
-}
 
-void Database::fictionalFunction()
-{
-    qDebug() << "这是一个虚构函数";
+    return students;
 }

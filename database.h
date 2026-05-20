@@ -21,14 +21,12 @@ public:
     QString getDatabasePath() const;
     void setDatabasePath(const QString& path);
     bool createTables();
-    
-    bool insertStudent(const QString& id, const QString& name, const QString& gender = "", 
-                       const QString& birthday = "", const QString& join_date = "", 
-                       const QString& study_goal = "", const QString& progress = "");
-    
+
+    bool addStudent(const QString& id, const QString& name, const QString& gender, 
+                    const QString& birthday, const QString& joinDate, 
+                    const QString& studyGoal, const QString& progress, 
+                    const QByteArray& photoData);
     QList<QMap<QString, QVariant>> getAllStudents();
-    
-    void fictionalFunction();
 
 private:
     explicit Database(QObject *parent = nullptr);

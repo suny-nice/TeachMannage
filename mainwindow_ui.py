@@ -18,13 +18,15 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QMainWindow, QPushButton,
     QSizePolicy, QStackedWidget, QStatusBar, QToolButton,
     QVBoxLayout, QWidget)
+
+from studentwidget import StudentWidget
 import img_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(662, 487)
+        MainWindow.resize(1016, 575)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.horizontalLayout = QHBoxLayout(self.centralwidget)
@@ -113,11 +115,8 @@ class Ui_MainWindow(object):
 
         self.stackedWidget = QStackedWidget(self.centralwidget)
         self.stackedWidget.setObjectName(u"stackedWidget")
-        self.pageStudent = QWidget()
+        self.pageStudent = StudentWidget()
         self.pageStudent.setObjectName(u"pageStudent")
-        self.pushButton = QPushButton(self.pageStudent)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setGeometry(QRect(180, 120, 100, 32))
         self.stackedWidget.addWidget(self.pageStudent)
         self.pageShedule = QWidget()
         self.pageShedule.setObjectName(u"pageShedule")
@@ -153,7 +152,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.stackedWidget.setCurrentIndex(4)
+        self.stackedWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -166,7 +165,6 @@ class Ui_MainWindow(object):
         self.btnFinance.setText(QCoreApplication.translate("MainWindow", u"\u8d22\u52a1", None))
         self.btnHonor.setText(QCoreApplication.translate("MainWindow", u"\u8363\u8a89\u5899", None))
         self.btnSystemSetting.setText(QCoreApplication.translate("MainWindow", u"\u7cfb\u7edf\u8bbe\u7f6e", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"1", None))
         self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"2", None))
         self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"3", None))
         self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"4", None))

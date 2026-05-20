@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "database.h"
+#include "studentwidget.h"
 #include <QFile>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -13,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent)
     loadStyleSheet();
     
     Database::instance().openDatabase();
+    
+    ui->pageStudent->loadStudentData();
 
     buttonGroup->addButton(ui->btnStudent, 0);
     buttonGroup->addButton(ui->btnShedule, 1);
@@ -30,4 +33,3 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-
