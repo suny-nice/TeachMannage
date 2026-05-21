@@ -144,6 +144,55 @@ bool Database::addStudent(const QString& id, const QString& name, const QString&
     }
 }
 
+bool Database::updateStudent(const QString& id, const QString& field, const QVariant& value)
+{
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return false;
+    }
+
+    // 白名单校验，防止 SQL 注入
+    QStringList allowedFields = {"name", "gender", "birthday", "join_date", "study_goal", "progress", "photo"};
+    if (!allowedFields.contains(field)) {
+        qDebug() << "不允许的字段:" << field;
+        return false;
+    }
+
+    QSqlQuery query;
+    QString sql = QString("UPDATE studentInfo SET %1 = :value WHERE id = :id").arg(field);
+    query.prepare(sql);
+    query.bindValue(":value", value);
+    query.bindValue(":id", id);
+
+    if (query.exec()) {
+        qDebug() << "学生信息更新成功:" << id << field;
+        return true;
+    } else {
+        qDebug() << "更新学生信息失败:" << query.lastError().text();
+        return false;
+    }
+}
+
+bool Database::deleteStudent(const QString& id)
+{
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return false;
+    }
+
+    QSqlQuery query;
+    query.prepare("DELETE FROM studentInfo WHERE id = :id");
+    query.bindValue(":id", id);
+
+    if (query.exec()) {
+        qDebug() << "学生信息删除成功:" << id;
+        return true;
+    } else {
+        qDebug() << "删除学生信息失败:" << query.lastError().text();
+        return false;
+    }
+}
+
 QList<QMap<QString, QVariant>> Database::getAllStudents()
 {
     QList<QMap<QString, QVariant>> students;

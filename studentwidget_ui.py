@@ -73,15 +73,15 @@ class Ui_StudentWidget(object):
 
         self.verticalLayout.addItem(self.verticalSpacer_2)
 
-        self.pushButton_2 = QPushButton(StudentWidget)
-        self.pushButton_2.setObjectName(u"pushButton_2")
+        self.btnDeleteItem = QPushButton(StudentWidget)
+        self.btnDeleteItem.setObjectName(u"btnDeleteItem")
 
-        self.verticalLayout.addWidget(self.pushButton_2)
+        self.verticalLayout.addWidget(self.btnDeleteItem)
 
-        self.pushButton_3 = QPushButton(StudentWidget)
-        self.pushButton_3.setObjectName(u"pushButton_3")
+        self.btnDeleteList = QPushButton(StudentWidget)
+        self.btnDeleteList.setObjectName(u"btnDeleteList")
 
-        self.verticalLayout.addWidget(self.pushButton_3)
+        self.verticalLayout.addWidget(self.btnDeleteList)
 
         self.verticalSpacer_3 = QSpacerItem(20, 140, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -115,7 +115,7 @@ class Ui_StudentWidget(object):
         ___qtablewidgetitem7 = self.tableWidget.horizontalHeaderItem(7)
         ___qtablewidgetitem7.setText(QCoreApplication.translate("StudentWidget", u"\u7167\u7247", None))
         self.pushButton.setText(QCoreApplication.translate("StudentWidget", u"\u6dfb\u52a0", None))
-        self.pushButton_2.setText(QCoreApplication.translate("StudentWidget", u"\u5220\u9664\u9879", None))
-        self.pushButton_3.setText(QCoreApplication.translate("StudentWidget", u"\u5220\u9664\u884c", None))
+        self.btnDeleteItem.setText(QCoreApplication.translate("StudentWidget", u"\u5220\u9664\u9879", None))
+        self.btnDeleteList.setText(QCoreApplication.translate("StudentWidget", u"\u5220\u9664\u884c", None))
     # retranslateUi
 

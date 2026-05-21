@@ -27,6 +27,8 @@ public:
                     const QString& studyGoal, const QString& progress, 
                     const QByteArray& photoData);
     QList<QMap<QString, QVariant>> getAllStudents();
+    bool deleteStudent(const QString& id);
+    bool updateStudent(const QString& id, const QString& field, const QVariant& value);
 
 private:
     explicit Database(QObject *parent = nullptr);
