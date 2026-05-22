@@ -1,12 +1,15 @@
 # Build directories
 build/
 *.pro.user
+CMakeLists.txt.user
 
 # Qt generated files
 moc_*.cpp
 moc_*.h
 qrc_*.cpp
 ui_*.h
+*_rc.py
+*_ui.py
 *.qm
 
 # macOS
