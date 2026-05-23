@@ -18,6 +18,7 @@ qt_add_executable(StudentMannageSystem
     studentwidget.h studentwidget.cpp studentwidget.ui
     addstudentdialog.h addstudentdialog.cpp
     ${RESOURCES}
+    schedulewidget.h schedulewidget.cpp schedulewidget.ui
 )
 
 target_include_directories(StudentMannageSystem

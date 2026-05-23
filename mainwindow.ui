@@ -250,24 +250,10 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="StudentWidget" name="pageStudent"/>
-      <widget class="QWidget" name="pageShedule">
-       <widget class="QPushButton" name="pushButton_2">
-        <property name="geometry">
-         <rect>
-          <x>150</x>
-          <y>110</y>
-          <width>100</width>
-          <height>32</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>2</string>
-        </property>
-       </widget>
-      </widget>
+      <widget class="ScheduleWidget" name="pageShedule"/>
       <widget class="QWidget" name="pageFinance">
        <widget class="QPushButton" name="pushButton_3">
         <property name="geometry">
@@ -323,7 +309,13 @@
   <customwidget>
    <class>StudentWidget</class>
    <extends>QWidget</extends>
-   <header location="global">studentwidget.h</header>
+   <header>studentwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ScheduleWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">schedulewidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

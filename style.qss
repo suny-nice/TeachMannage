@@ -90,6 +90,12 @@ QHeaderView::section {
     white-space: nowrap;
 }
 
+QHeaderView::section:vertical {
+    min-width: 60px;
+    white-space: pre-wrap;
+    text-align: center;
+}
+
 QHeaderView::section:last {
     border-right: none;
 }
@@ -163,4 +169,58 @@ QStatusBar {
     background-color: #fafafa;
     color: #666666;
     border-top: 1px solid #e0e0e0;
+}
+
+/* 课程表样式 */
+QComboBox {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 13px;
+}
+
+QComboBox:hover {
+    border-color: #40a9ff;
+}
+
+QComboBox::drop-down {
+    width: 0px;
+    border: none;
+}
+
+QComboBox::down-arrow {
+    width: 0px;
+    height: 0px;
+    border: none;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #d9d9d9;
+    selection-background-color: #e6f7ff;
+    selection-color: #1890ff;
+    min-width: 100px;
+}
+
+/* 课程表按钮样式 */
+QPushButton#prevWeekBtn,
+QPushButton#nextWeekBtn,
+QPushButton#addButton,
+QPushButton#deleteButton {
+    background-color: #1890ff;
+    border: none;
+    color: white;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+QPushButton#prevWeekBtn:hover,
+QPushButton#nextWeekBtn:hover,
+QPushButton#addButton:hover,
+QPushButton#deleteButton:hover {
+    background-color: #096dd9;
 }
