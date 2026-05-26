@@ -1,14 +1,17 @@
 #include "database.h"
 #include <QFileInfo>
+#include <QDir>
+#include <QFile>
+#include <QCoreApplication>
 
 Database::Database(QObject *parent) : QObject(parent)
 {
+    // 数据库固定存放在系统应用数据目录
+    dbPath = QStandardPaths::writableLocation(
+        QStandardPaths::AppDataLocation) + "/techManSys.db";
 }
 
-Database::~Database()
-{
-    closeDatabase();
-}
+Database::~Database() { closeDatabase(); }
 
 Database& Database::instance()
 {
@@ -18,10 +21,7 @@ Database& Database::instance()
 
 void Database::closeDatabase()
 {
-    if (db.isOpen()) {
-        db.close();
-        qDebug() << "数据库已关闭";
-    }
+    if (db.isOpen()) db.close();
 }
 
 bool Database::openDatabase(const QString& path)
@@ -29,25 +29,35 @@ bool Database::openDatabase(const QString& path)
     if (!path.isEmpty()) {
         dbPath = path;
     }
-    
-    QString folder = QFileInfo(dbPath).path();
-    QDir dir(folder);
-    if (!dir.exists()) {
-        dir.mkpath(folder);
-        qDebug() << "创建文件夹:" << folder;
+
+    // 首次运行：从旧位置（项目根目录）迁移已有数据
+    QString oldDb = QCoreApplication::applicationDirPath();
+    for (int i = 0; i < 8; ++i) {
+        QString candidate = QDir(oldDb).absoluteFilePath("sqllite/techManSys.db");
+        if (QFileInfo::exists(candidate)) {
+            QString newDir = QFileInfo(dbPath).path();
+            QDir().mkpath(newDir);
+            if (!QFileInfo::exists(dbPath)) {
+                QFile::copy(candidate, dbPath);
+            }
+            break;
+        }
+        QDir d(oldDb);
+        if (!d.cdUp()) break;
+        oldDb = d.absolutePath();
     }
-    
+
+    // 确保目录存在
+    QDir().mkpath(QFileInfo(dbPath).path());
+
     db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName(dbPath);
-    
+
     if (db.open()) {
-        qDebug() << "数据库打开成功:" << dbPath;
         createTables();
         return true;
-    } else {
-        qDebug() << "数据库打开失败:" << db.lastError().text();
-        return false;
     }
+    return false;
 }
 
 QString Database::getDatabasePath() const
@@ -217,4 +227,104 @@ QList<QMap<QString, QVariant>> Database::getAllStudents()
     }
 
     return students;
+}
+
+bool Database::addFinancialRecord(const QString& studentId, const QString& paymentDate,
+                                   double amount, const QString& paymentType, const QString& notes)
+{
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return false;
+    }
+
+    QSqlQuery query;
+    query.prepare("INSERT INTO financialRecords (student_id, payment_date, amount, payment_type, notes) "
+                  "VALUES (:student_id, :payment_date, :amount, :payment_type, :notes)");
+    query.bindValue(":student_id", studentId);
+    query.bindValue(":payment_date", paymentDate);
+    query.bindValue(":amount", amount);
+    query.bindValue(":payment_type", paymentType);
+    query.bindValue(":notes", notes);
+
+    if (query.exec()) {
+        qDebug() << "缴费记录添加成功";
+        return true;
+    } else {
+        qDebug() << "添加缴费记录失败:" << query.lastError().text();
+        return false;
+    }
+}
+
+QList<QMap<QString, QVariant>> Database::getAllFinancialRecords()
+{
+    QList<QMap<QString, QVariant>> records;
+
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return records;
+    }
+
+    QSqlQuery query("SELECT fr.*, si.name AS student_name "
+                    "FROM financialRecords fr "
+                    "LEFT JOIN studentInfo si ON fr.student_id = si.id "
+                    "ORDER BY fr.payment_date ASC");
+    while (query.next()) {
+        QMap<QString, QVariant> record;
+        record["id"] = query.value("id");
+        record["student_id"] = query.value("student_id");
+        record["student_name"] = query.value("student_name");
+        record["payment_date"] = query.value("payment_date");
+        record["amount"] = query.value("amount");
+        record["payment_type"] = query.value("payment_type");
+        record["notes"] = query.value("notes");
+        records.append(record);
+    }
+
+    return records;
+}
+
+bool Database::deleteFinancialRecord(int id)
+{
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return false;
+    }
+
+    QSqlQuery query;
+    query.prepare("DELETE FROM financialRecords WHERE id = :id");
+    query.bindValue(":id", id);
+
+    if (query.exec()) {
+        qDebug() << "缴费记录删除成功:" << id;
+        return true;
+    } else {
+        qDebug() << "删除缴费记录失败:" << query.lastError().text();
+        return false;
+    }
+}
+
+bool Database::updateFinancialRecord(int id, const QString& paymentDate,
+                                      double amount, const QString& paymentType, const QString& notes)
+{
+    if (!db.isOpen()) {
+        qDebug() << "数据库未打开";
+        return false;
+    }
+
+    QSqlQuery query;
+    query.prepare("UPDATE financialRecords SET payment_date = :date, amount = :amount, "
+                  "payment_type = :type, notes = :notes WHERE id = :id");
+    query.bindValue(":date", paymentDate);
+    query.bindValue(":amount", amount);
+    query.bindValue(":type", paymentType);
+    query.bindValue(":notes", notes);
+    query.bindValue(":id", id);
+
+    if (query.exec()) {
+        qDebug() << "缴费记录更新成功:" << id;
+        return true;
+    } else {
+        qDebug() << "更新缴费记录失败:" << query.lastError().text();
+        return false;
+    }
 }

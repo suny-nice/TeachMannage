@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(StudentMannageSystem LANGUAGES CXX)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Sql)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Sql Charts)
 
 qt_standard_project_setup()
 
@@ -17,8 +17,11 @@ qt_add_executable(StudentMannageSystem
     database.h
     studentwidget.h studentwidget.cpp studentwidget.ui
     addstudentdialog.h addstudentdialog.cpp
+    addfinancialdialog.h addfinancialdialog.cpp
     ${RESOURCES}
     schedulewidget.h schedulewidget.cpp schedulewidget.ui
+    financialwidget.h financialwidget.cpp financialwidget.ui
+
 )
 
 target_include_directories(StudentMannageSystem
@@ -31,6 +34,7 @@ target_link_libraries(StudentMannageSystem
         Qt::Core
         Qt::Widgets
         Qt::Sql
+        Qt::Charts
 )
 
 include(GNUInstallDirs)

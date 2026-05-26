@@ -7,6 +7,7 @@
 #include <QSqlError>
 #include <QDebug>
 #include <QDir>
+#include <QStandardPaths>
 #include <QVariant>
 #include <QList>
 #include <QMap>
@@ -30,12 +31,19 @@ public:
     bool deleteStudent(const QString& id);
     bool updateStudent(const QString& id, const QString& field, const QVariant& value);
 
+    bool addFinancialRecord(const QString& studentId, const QString& paymentDate,
+                            double amount, const QString& paymentType, const QString& notes);
+    QList<QMap<QString, QVariant>> getAllFinancialRecords();
+    bool deleteFinancialRecord(int id);
+    bool updateFinancialRecord(int id, const QString& paymentDate,
+                               double amount, const QString& paymentType, const QString& notes);
+
 private:
     explicit Database(QObject *parent = nullptr);
     ~Database();
     
     QSqlDatabase db;
-    QString dbPath = "/Users/liaoyuanqing/Documents/Qt/InterProgram/StudentMannageSystem/sqllite/techManSys.db";
+    QString dbPath;
 };
 
 #endif // DATABASE_H

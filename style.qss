@@ -44,6 +44,7 @@ QToolButton::pressed, QToolButton::checked {
 
 QStackedWidget {
     background-color: #ffffff;
+    border: none;
     border-radius: 0px;
     margin: 0px;
     padding: 0px;

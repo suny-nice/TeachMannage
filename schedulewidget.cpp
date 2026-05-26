@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QHBoxLayout>
 #include <QSqlQuery>
+#include <QSqlError>
 #include <QMap>
 
 ScheduleWidget::ScheduleWidget(QWidget *parent)

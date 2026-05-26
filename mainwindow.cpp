@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "database.h"
 #include "studentwidget.h"
+#include "financialwidget.h"
 #include <QFile>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -16,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     Database::instance().openDatabase();
     
     ui->pageStudent->loadStudentData();
+    ui->pageFinance->loadData();
 
     buttonGroup->addButton(ui->btnStudent, 0);
     buttonGroup->addButton(ui->btnShedule, 1);
