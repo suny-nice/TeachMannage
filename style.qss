@@ -225,3 +225,33 @@ QPushButton#addButton:hover,
 QPushButton#deleteButton:hover {
     background-color: #096dd9;
 }
+
+/* 登录按钮 */
+QPushButton#btnLogin {
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+QPushButton#btnLogin:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+QPushButton#btnLogin:pressed {
+    background-color: #c0392b;
+}
+
+QWidget#pageSystemSetting {
+    background-color: #ffffff;
+    max-width: 340px;
+}
+
+QGroupBox {
+    background-color: #ffffff;
+    border: none;
+}
+
+QLineEdit {
+    background-color: #ffffff;
+}

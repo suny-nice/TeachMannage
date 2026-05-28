@@ -10,11 +10,11 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
     , buttonGroup(new QButtonGroup(this))
 {
+    Database::instance().openDatabase();
+
     ui->setupUi(this);
 
     loadStyleSheet();
-    
-    Database::instance().openDatabase();
     
     ui->pageStudent->loadStudentData();
     ui->pageFinance->loadData();

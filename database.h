@@ -38,6 +38,16 @@ public:
     bool updateFinancialRecord(int id, const QString& paymentDate,
                                double amount, const QString& paymentType, const QString& notes);
 
+    // honorWall 操作
+    bool addHonorWallRecord(const QByteArray& imageData, const QString& description);
+    QList<QMap<QString, QVariant>> getAllHonorWallRecords();
+    bool updateHonorWallRecord(int id, const QByteArray& imageData, const QString& description);
+    bool deleteHonorWallRecord(int id);
+
+    // 用户认证
+    bool authenticateUser(const QString& username, const QString& password);
+    bool changePassword(const QString& username, const QString& oldPassword, const QString& newPassword);
+
 private:
     explicit Database(QObject *parent = nullptr);
     ~Database();

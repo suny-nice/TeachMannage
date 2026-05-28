@@ -21,6 +21,9 @@ qt_add_executable(StudentMannageSystem
     ${RESOURCES}
     schedulewidget.h schedulewidget.cpp schedulewidget.ui
     financialwidget.h financialwidget.cpp financialwidget.ui
+    honorwallwidget.h honorwallwidget.cpp honorwallwidget.ui
+    setting.h setting.cpp setting.ui
+    logindialog.h logindialog.cpp logindialog.ui
 
 )
 

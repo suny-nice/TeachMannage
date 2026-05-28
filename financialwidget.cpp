@@ -12,9 +12,9 @@
 #include <QDateTime>
 #include <algorithm>
 
-// ──────────────────────────────────────────────
+
 // 构造函数 / 析构函数
-// ──────────────────────────────────────────────
+
 
 FinancialWidget::FinancialWidget(QWidget *parent)
     : QWidget(parent)
@@ -75,9 +75,9 @@ FinancialWidget::~FinancialWidget()
     delete ui;
 }
 
-// ──────────────────────────────────────────────
+
 // 初始化图表容器
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::setupCharts()
 {
@@ -148,9 +148,9 @@ void FinancialWidget::setupCharts()
     lineLayout->addWidget(lineChartView);
 }
 
-// ──────────────────────────────────────────────
+
 // 加载全部数据
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::loadData()
 {
@@ -163,9 +163,9 @@ void FinancialWidget::loadData()
     applyFilter();
 }
 
-// ──────────────────────────────────────────────
+
 // 填充学生下拉框
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::populateStudentCombo()
 {
@@ -185,18 +185,18 @@ void FinancialWidget::populateStudentCombo()
     ui->comboStudent->blockSignals(false);
 }
 
-// ──────────────────────────────────────────────
+
 // 筛选条件变化
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::onFilterChanged()
 {
     applyFilter();
 }
 
-// ──────────────────────────────────────────────
+
 // 应用筛选条件 → 刷新表格 + 图表
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::applyFilter()
 {
@@ -229,9 +229,9 @@ void FinancialWidget::applyFilter()
     refreshLineChart(filtered);
 }
 
-// ──────────────────────────────────────────────
+
 // 饼状图：按缴费类型汇总金额
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::refreshPieChart(const QList<QMap<QString, QVariant>>& records)
 {
@@ -278,9 +278,9 @@ void FinancialWidget::refreshPieChart(const QList<QMap<QString, QVariant>>& reco
     }
 }
 
-// ──────────────────────────────────────────────
+
 // 折线图：按日期汇总总金额
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::refreshLineChart(const QList<QMap<QString, QVariant>>& records)
 {
@@ -346,9 +346,9 @@ void FinancialWidget::refreshLineChart(const QList<QMap<QString, QVariant>>& rec
     }
 }
 
-// ──────────────────────────────────────────────
+
 // 辅助方法
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::appendTableRow(const QMap<QString, QVariant>& rec)
 {
@@ -387,9 +387,9 @@ int FinancialWidget::findRecordId(int row) const
     return -1;
 }
 
-// ──────────────────────────────────────────────
+
 // 添加按钮
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::onAddClicked()
 {
@@ -413,9 +413,9 @@ void FinancialWidget::onAddClicked()
     }
 }
 
-// ──────────────────────────────────────────────
+
 // 删除按钮
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::onDeleteClicked()
 {
@@ -451,9 +451,9 @@ void FinancialWidget::onDeleteClicked()
     }
 }
 
-// ──────────────────────────────────────────────
+
 // 修改按钮
-// ──────────────────────────────────────────────
+
 
 void FinancialWidget::onModifyClicked()
 {

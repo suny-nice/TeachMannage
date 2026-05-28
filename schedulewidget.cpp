@@ -143,22 +143,39 @@ void ScheduleWidget::loadScheduleData()
     int week = ui->weekComboBox->currentData().toInt();
     QPair<int, int> key = qMakePair(year, week);
 
-    if (scheduleData.contains(key)) {
-        QVector<QVector<QString>> data = scheduleData[key];
-        for (int i = 0; i < 7; ++i) {
-            for (int j = 0; j < times.size(); ++j) {
-                if (i < data.size() && j < data[i].size()) {
-                    ui->tableWidget->item(i, j)->setText(data[i][j]);
-                } else {
-                    ui->tableWidget->item(i, j)->setText("");
-                }
+    // 缓存没有则从数据库加载
+    if (!scheduleData.contains(key)) {
+        QVector<QVector<QString>> data(7, QVector<QString>(times.size()));
+
+        QDate startDate(year, 1, 1);
+        int daysToAdd = (week - 1) * 7 + (1 - startDate.dayOfWeek());
+        QDate monday = startDate.addDays(daysToAdd);
+
+        QMap<QString, int> timeToCol = {
+            {"09:00", 0}, {"11:00", 1}, {"14:00", 2},
+            {"16:00", 3}, {"19:00", 4}, {"21:00", 5}
+        };
+
+        QSqlQuery query;
+        query.prepare("SELECT date, time, course_name FROM schedule "
+                       "WHERE date >= :m AND date <= :s");
+        query.bindValue(":m", monday.toString("yyyy-MM-dd"));
+        query.bindValue(":s", monday.addDays(6).toString("yyyy-MM-dd"));
+        if (query.exec()) {
+            while (query.next()) {
+                int dayIdx = QDate::fromString(query.value(0).toString(), "yyyy-MM-dd").dayOfWeek() - 1;
+                int col = timeToCol.value(query.value(1).toString(), -1);
+                if (dayIdx >= 0 && dayIdx < 7 && col >= 0 && col < times.size())
+                    data[dayIdx][col] = query.value(2).toString();
             }
         }
-    } else {
-        for (int i = 0; i < 7; ++i) {
-            for (int j = 0; j < times.size(); ++j) {
-                ui->tableWidget->item(i, j)->setText("");
-            }
+        scheduleData[key] = data;
+    }
+
+    QVector<QVector<QString>> data = scheduleData[key];
+    for (int i = 0; i < 7; ++i) {
+        for (int j = 0; j < times.size(); ++j) {
+            ui->tableWidget->item(i, j)->setText(data[i][j]);
         }
     }
 

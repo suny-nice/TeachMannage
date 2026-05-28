@@ -118,9 +118,112 @@ bool Database::createTables()
         "username TEXT NOT NULL UNIQUE, "
         "password TEXT NOT NULL)";
     query.exec(sqlUsers);
-    
+
+    // 插入默认管理员账户（仅当 users 表为空时）
+    QSqlQuery checkAdmin;
+    checkAdmin.exec("SELECT COUNT(*) FROM users");
+    if (checkAdmin.next() && checkAdmin.value(0).toInt() == 0) {
+        QSqlQuery insAdmin;
+        insAdmin.prepare("INSERT INTO users (username, password) VALUES (:u, :p)");
+        insAdmin.bindValue(":u", "admin");
+        insAdmin.bindValue(":p", "admin123");
+        insAdmin.exec();
+    }
+
     // qDebug() << "所有表创建完成";
     return true;
+}
+
+bool Database::addHonorWallRecord(const QByteArray& imageData, const QString& description)
+{
+    if (!db.isOpen()) return false;
+
+    QSqlQuery query;
+    query.prepare("INSERT INTO honorWall (image_data, description, added_date) "
+                  "VALUES (:img, :desc, datetime('now','localtime'))");
+    query.bindValue(":img", imageData);
+    query.bindValue(":desc", description);
+
+    if (query.exec()) return true;
+    qDebug() << "添加荣誉记录失败:" << query.lastError().text();
+    return false;
+}
+
+QList<QMap<QString, QVariant>> Database::getAllHonorWallRecords()
+{
+    QList<QMap<QString, QVariant>> records;
+    if (!db.isOpen()) return records;
+
+    QSqlQuery query("SELECT * FROM honorWall ORDER BY id ASC");
+    while (query.next()) {
+        QMap<QString, QVariant> record;
+        record["id"] = query.value("id");
+        record["image_data"] = query.value("image_data");
+        record["description"] = query.value("description");
+        record["added_date"] = query.value("added_date");
+        records.append(record);
+    }
+    return records;
+}
+
+bool Database::updateHonorWallRecord(int id, const QByteArray& imageData, const QString& description)
+{
+    if (!db.isOpen()) return false;
+
+    QSqlQuery query;
+    query.prepare("UPDATE honorWall SET image_data = :img, description = :desc WHERE id = :id");
+    query.bindValue(":img", imageData);
+    query.bindValue(":desc", description);
+    query.bindValue(":id", id);
+
+    if (query.exec()) return true;
+    qDebug() << "更新荣誉记录失败:" << query.lastError().text();
+    return false;
+}
+
+bool Database::deleteHonorWallRecord(int id)
+{
+    if (!db.isOpen()) return false;
+
+    QSqlQuery query;
+    query.prepare("DELETE FROM honorWall WHERE id = :id");
+    query.bindValue(":id", id);
+
+    if (query.exec()) return true;
+    qDebug() << "删除荣誉记录失败:" << query.lastError().text();
+    return false;
+}
+
+bool Database::authenticateUser(const QString& username, const QString& password)
+{
+    if (!db.isOpen()) return false;
+
+    QSqlQuery query;
+    query.prepare("SELECT password FROM users WHERE username = :uname");
+    query.bindValue(":uname", username);
+
+    if (query.exec() && query.next()) {
+        QString storedPwd = query.value("password").toString();
+        return storedPwd == password;
+    }
+    return false;
+}
+
+bool Database::changePassword(const QString& username, const QString& oldPassword, const QString& newPassword)
+{
+    if (!db.isOpen()) return false;
+
+    // 先验证旧密码
+    if (!authenticateUser(username, oldPassword)) return false;
+
+    QSqlQuery query;
+    query.prepare("UPDATE users SET password = :newpwd WHERE username = :uname");
+    query.bindValue(":newpwd", newPassword);
+    query.bindValue(":uname", username);
+
+    if (query.exec()) return true;
+    qDebug() << "修改密码失败:" << query.lastError().text();
+    return false;
 }
 
 bool Database::addStudent(const QString& id, const QString& name, const QString& gender,

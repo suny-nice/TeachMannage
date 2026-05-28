@@ -137,13 +137,6 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="btnDeleteItem">
-       <property name="text">
-        <string>删除项</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="btnDeleteList">
        <property name="text">
         <string>删除行</string>

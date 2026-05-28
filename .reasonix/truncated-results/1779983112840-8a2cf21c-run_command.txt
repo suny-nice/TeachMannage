@@ -1,0 +1,1153 @@
+$ git -C /Users/liaoyuanqing/Documents/Qt/InterProgram/StudentMannageSystem diff
+[exit 0]
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 100913e..72487b6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -21,6 +21,9 @@ qt_add_executable(StudentMannageSystem
+     ${RESOURCES}
+     schedulewidget.h schedulewidget.cpp schedulewidget.ui
+     financialwidget.h financialwidget.cpp financialwidget.ui
++    honorwallwidget.h honorwallwidget.cpp honorwallwidget.ui
++    setting.h setting.cpp setting.ui
++    logindialog.h logindialog.cpp logindialog.ui
+ 
+ )
+ 
+diff --git a/database.cpp b/database.cpp
+index c7f58da..9da6ec5 100644
+--- a/database.cpp
++++ b/database.cpp
+@@ -118,11 +118,114 @@ bool Database::createTables()
+         "username TEXT NOT NULL UNIQUE, "
+         "password TEXT NOT NULL)";
+     query.exec(sqlUsers);
+-    
++
++    // 插入默认管理员账户（仅当 users 表为空时）
++    QSqlQuery checkAdmin;
++    checkAdmin.exec("SELECT COUNT(*) FROM users");
++    if (checkAdmin.next() && checkAdmin.value(0).toInt() == 0) {
++        QSqlQuery insAdmin;
++        insAdmin.prepare("INSERT INTO users (username, password) VALUES (:u, :p)");
++        insAdmin.bindValue(":u", "admin");
++        insAdmin.bindValue(":p", "admin123");
++        insAdmin.exec();
++    }
++
+     // qDebug() << "所有表创建完成";
+     return true;
+ }
+ 
++bool Database::addHonorWallRecord(const QByteArray& imageData, const QString& description)
++{
++    if (!db.isOpen()) return false;
++
++    QSqlQuery query;
++    query.prepare("INSERT INTO honorWall (image_data, description, added_date) "
++                  "VALUES (:img, :desc, datetime('now','localtime'))");
++    query.bindValue(":img", imageData);
++    query.bindValue(":desc", description);
++
++    if (query.exec()) return true;
++    qDebug() << "添加荣誉记录失败:" << query.lastError().text();
++    return false;
++}
++
++QList<QMap<QString, QVariant>> Database::getAllHonorWallRecords()
++{
++    QList<QMap<QString, QVariant>> records;
++    if (!db.isOpen()) return records;
++
++    QSqlQuery query("SELECT * FROM honorWall ORDER BY id ASC");
++    while (query.next()) {
++        QMap<QString, QVariant> record;
++        record["id"] = query.value("id");
++        record["image_data"] = query.value("image_data");
++        record["description"] = query.value("description");
++        record["added_date"] = query.value("added_date");
++        records.append(record);
++    }
++    return records;
++}
++
++bool Database::updateHonorWallRecord(int id, const QByteArray& imageData, const QString& description)
++{
++    if (!db.isOpen()) return false;
++
++    QSqlQuery query;
++    query.prepare("UPDATE honorWall SET image_data = :img, description = :desc WHERE id = :id");
++    query.bindValue(":img", imageData);
++    query.bindValue(":desc", description);
++    query.bindValue(":id", id);
++
++    if (query.exec()) return true;
++    qDebug() << "更新荣誉记录失败:" << query.lastError().text();
++    return false;
++}
++
++bool Database::deleteHonorWallRecord(int id)
++{
++    if (!db.isOpen()) return false;
++
++    QSqlQuery query;
++    query.prepare("DELETE FROM honorWall WHERE id = :id");
++    query.bindValue(":id", id);
++
++    if (query.exec()) return true;
++    qDebug() << "删除荣誉记录失败:" << query.lastError().text();
++    return false;
++}
++
++bool Database::authenticateUser(const QString& username, const QString& password)
++{
++    if (!db.isOpen()) return false;
++
++    QSqlQuery query;
++    query.prepare("SELECT password FROM users WHERE username = :uname");
++    query.bindValue(":uname", username);
++
++    if (query.exec() && query.next()) {
++        QString storedPwd = query.value("password").toString();
++        return storedPwd == password;
++    }
++    return false;
++}
++
++bool Database::changePassword(const QString& username, const QString& oldPassword, const QString& newPassword)
++{
++    if (!db.isOpen()) return false;
++
++    // 先验证旧密码
++    if (!authenticateUser(username, oldPassword)) return false;
++
++    QSqlQuery query;
++    query.prepare("UPDATE users SET password = :newpwd WHERE username = :uname");
++    query.bindValue(":newpwd", newPassword);
++    query.bindValue(":uname", username);
++
++    if (query.exec()) return true;
++    qDebug() << "修改密码失败:" << query.lastError().text();
++    return false;
++}
++
+ bool Database::addStudent(const QString& id, const QString& name, const QString& gender,
+                           const QString& birthday, const QString& joinDate,
+                           const QString& studyGoal, const QString& progress,
+diff --git a/database.h b/database.h
+index 0d6415e..c2a574b 100644
+--- a/database.h
++++ b/database.h
+@@ -38,6 +38,16 @@ public:
+     bool updateFinancialRecord(int id, const QString& paymentDate,
+                                double amount, const QString& paymentType, const QString& notes);
+ 
++    // honorWall 操作
++    bool addHonorWallRecord(const QByteArray& imageData, const QString& description);
++    QList<QMap<QString, QVariant>> getAllHonorWallRecords();
++    bool updateHonorWallRecord(int id, const QByteArray& imageData, const QString& description);
++    bool deleteHonorWallRecord(int id);
++
++    // 用户认证
++    bool authenticateUser(const QString& username, const QString& password);
++    bool changePassword(const QString& username, const QString& oldPassword, const QString& newPassword);
++
+ private:
+     explicit Database(QObject *parent = nullptr);
+     ~Database();
+diff --git a/financialwidget.cpp b/financialwidget.cpp
+index 6911779..671afaf 100644
+--- a/financialwidget.cpp
++++ b/financialwidget.cpp
+@@ -12,9 +12,9 @@
+ #include <QDateTime>
+ #include <algorithm>
+ 
+-// ──────────────────────────────────────────────
++
+ // 构造函数 / 析构函数
+-// ──────────────────────────────────────────────
++
+ 
+ FinancialWidget::FinancialWidget(QWidget *parent)
+     : QWidget(parent)
+@@ -75,9 +75,9 @@ FinancialWidget::~FinancialWidget()
+     delete ui;
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 初始化图表容器
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::setupCharts()
+ {
+@@ -148,9 +148,9 @@ void FinancialWidget::setupCharts()
+     lineLayout->addWidget(lineChartView);
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 加载全部数据
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::loadData()
+ {
+@@ -163,9 +163,9 @@ void FinancialWidget::loadData()
+     applyFilter();
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 填充学生下拉框
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::populateStudentCombo()
+ {
+@@ -185,18 +185,18 @@ void FinancialWidget::populateStudentCombo()
+     ui->comboStudent->blockSignals(false);
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 筛选条件变化
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::onFilterChanged()
+ {
+     applyFilter();
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 应用筛选条件 → 刷新表格 + 图表
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::applyFilter()
+ {
+@@ -229,9 +229,9 @@ void FinancialWidget::applyFilter()
+     refreshLineChart(filtered);
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 饼状图：按缴费类型汇总金额
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::refreshPieChart(const QList<QMap<QString, QVariant>>& records)
+ {
+@@ -278,9 +278,9 @@ void FinancialWidget::refreshPieChart(const QList<QMap<QString, QVariant>>& reco
+     }
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 折线图：按日期汇总总金额
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::refreshLineChart(const QList<QMap<QString, QVariant>>& records)
+ {
+@@ -346,9 +346,9 @@ void FinancialWidget::refreshLineChart(const QList<QMap<QString, QVariant>>& rec
+     }
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 辅助方法
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::appendTableRow(const QMap<QString, QVariant>& rec)
+ {
+@@ -387,9 +387,9 @@ int FinancialWidget::findRecordId(int row) const
+     return -1;
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 添加按钮
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::onAddClicked()
+ {
+@@ -413,9 +413,9 @@ void FinancialWidget::onAddClicked()
+     }
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 删除按钮
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::onDeleteClicked()
+ {
+@@ -451,9 +451,9 @@ void FinancialWidget::onDeleteClicked()
+     }
+ }
+ 
+-// ──────────────────────────────────────────────
++
+ // 修改按钮
+-// ──────────────────────────────────────────────
++
+ 
+ void FinancialWidget::onModifyClicked()
+ {
+diff --git a/financialwidget.ui b/financialwidget.ui
+index 090afee..c7b50ab 100644
+--- a/financialwidget.ui
++++ b/financialwidget.ui
+@@ -6,7 +6,7 @@
+    <rect>
+     <x>0</x>
+     <y>0</y>
+-    <width>800</width>
++    <width>877</width>
+     <height>600</height>
+    </rect>
+   </property>
+@@ -59,14 +59,14 @@
+        </item>
+        <item>
+         <widget class="QDateEdit" name="dateStart">
+-         <property name="calendarPopup">
+-          <bool>true</bool>
++         <property name="specialValueText">
++          <string>不限</string>
+          </property>
+          <property name="displayFormat">
+           <string>yyyy-MM-dd</string>
+          </property>
+-         <property name="specialValueText">
+-          <string>不限</string>
++         <property name="calendarPopup">
++          <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+@@ -79,14 +79,14 @@
+        </item>
+        <item>
+         <widget class="QDateEdit" name="dateEnd">
+-         <property name="calendarPopup">
+-          <bool>true</bool>
++         <property name="specialValueText">
++          <string>不限</string>
+          </property>
+          <property name="displayFormat">
+           <string>yyyy-MM-dd</string>
+          </property>
+-         <property name="specialValueText">
+-          <string>不限</string>
++         <property name="calendarPopup">
++          <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+@@ -148,12 +148,12 @@
+       <layout class="QHBoxLayout" name="topLayout" stretch="7,4">
+        <item>
+         <widget class="QTableWidget" name="tableWidget">
+-         <property name="selectionBehavior">
+-          <enum>QAbstractItemView::SelectRows</enum>
+-         </property>
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
++         <property name="selectionBehavior">
++          <enum>QAbstractItemView::SelectRows</enum>
++         </property>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+diff --git a/honorwallwidget.cpp b/honorwallwidget.cpp
+new file mode 100644
+index 0000000..ff3e2c7
+--- /dev/null
++++ b/honorwallwidget.cpp
+@@ -0,0 +1,236 @@
++#include "honorwallwidget.h"
++#include "ui_honorwallwidget.h"
++#include "database.h"
++
++#include <QFileDialog>
++#include <QMessageBox>
++#include <QPixmap>
++#include <QMouseEvent>
++#include <QPainter>
++#include <QDateTime>
++#include <QFile>
++#include <QFileInfo>
++
++HonorwallWidget::HonorwallWidget(QWidget *parent)
++    : QWidget(parent)
++    , ui(new Ui::HonorwallWidget)
++{
++    ui->setupUi(this);
++
++    // 初始化三个空位
++    m_items = { HonorItem(), HonorItem(), HonorItem() };
++
++    // 安装事件过滤器，监听图片标签点击
++    ui->imageLabel1->installEventFilter(this);
++    ui->imageLabel2->installEventFilter(this);
++    ui->imageLabel3->installEventFilter(this);
++
++    // 启用鼠标跟踪（可选，用于悬停效果）
++    ui->imageLabel1->setCursor(Qt::PointingHandCursor);
++    ui->imageLabel2->setCursor(Qt::PointingHandCursor);
++    ui->imageLabel3->setCursor(Qt::PointingHandCursor);
++
++    loadFromDatabase();
++}
++
++HonorwallWidget::~HonorwallWidget()
++{
++    delete ui;
++}
++
++bool HonorwallWidget::eventFilter(QObject *obj, QEvent *event)
++{
++    if (event->type() == QEvent::MouseButtonPress) {
++        for (int i = 0; i < 3; ++i) {
++            if (obj == labelAt(i)) {
++                selectSlot(i);
++                return true;
++            }
++        }
++    }
++    return QWidget::eventFilter(obj, event);
++}
++
++QLabel* HonorwallWidget::labelAt(int index) const
++{
++    switch (index) {
++        case 0: return ui->imageLabel1;
++        case 1: return ui->imageLabel2;
++        case 2: return ui->imageLabel3;
++        default: return nullptr;
++    }
++}
++
++void HonorwallWidget::selectSlot(int index)
++{
++    if (index < 0 || index >= 3) return;
++
++    // 清除之前的高亮
++    clearSelection();
++
++    m_selectedIndex = index;
++
++    // 高亮选中的标签：加粗边框（通过样式表）
++    QString style = "QLabel {"
++                    "  border: 3px solid #1890ff;"
++                    "  background-color: #e6f7ff;"
++                    "}";
++    labelAt(index)->setStyleSheet(style);
++}
++
++void HonorwallWidget::clearSelection()
++{
++    if (m_selectedIndex >= 0) {
++        // 还原边框样式
++        labelAt(m_selectedIndex)->setStyleSheet(
++            "QLabel { border: 1px solid palette(mid); }");
++    }
++    m_selectedIndex = -1;
++}
++
++void HonorwallWidget::loadFromDatabase()
++{
++    // 重置
++    for (auto &item : m_items) {
++        item = HonorItem();
++    }
++
++    auto records = Database::instance().getAllHonorWallRecords();
++    int count = qMin(records.size(), 3);
++    for (int i = 0; i < count; ++i) {
++        m_items[i].dbId = records[i]["id"].toInt();
++        m_items[i].imageData = records[i]["image_data"].toByteArray();
++        m_items[i].description = records[i]["description"].toString();
++    }
++
++    updateImageDisplay();
++}
++
++void HonorwallWidget::updateImageDisplay()
++{
++    for (int i = 0; i < 3; ++i) {
++        QLabel *label = labelAt(i);
++
++        if (!m_items[i].imageData.isEmpty()) {
++            QPixmap pix;
++            pix.loadFromData(m_items[i].imageData);
++            if (!pix.isNull()) {
++                label->setPixmap(pix);
++                label->setText(QString());
++            } else {
++                label->setText(tr("加载失败"));
++                label->setPixmap(QPixmap());
++            }
++        } else {
++            label->setPixmap(QPixmap());
++            label->setText(QString());
++        }
++
++        // 还原选择状态边框
++        if (i == m_selectedIndex) {
++            label->setStyleSheet(
++                "QLabel { border: 3px solid #1890ff; background-color: #e6f7ff; }");
++        } else {
++            label->setStyleSheet(
++                "QLabel { border: 1px solid palette(mid); }");
++        }
++    }
++}
++
++void HonorwallWidget::on_btnAdd_clicked()
++{
++    // 找到第一个空位
++    int emptySlot = -1;
++    for (int i = 0; i < 3; ++i) {
++        if (m_items[i].dbId == -1) {
++            emptySlot = i;
++            break;
++        }
++    }
++
++    if (emptySlot == -1) {
++        QMessageBox::information(this, tr("提示"), tr("最多只能添加 3 张图片"));
++        return;
++    }
++
++    QString filePath = QFileDialog::getOpenFileName(
++        this,
++        tr("选择图片"),
++        QString(),
++        tr("图片文件 (*.png *.jpg *.jpeg *.bmp)"));
++
++    if (filePath.isEmpty()) return;
++
++    // 读取文件
++    QFile file(filePath);
++    if (!file.open(QIODevice::ReadOnly)) {
++        QMessageBox::warning(this, tr("错误"), tr("无法打开图片文件"));
++        return;
++    }
++    QByteArray data = file.readAll();
++    file.close();
++
++    // 存入数据库
++    QString desc = QFileInfo(filePath).fileName();
++    if (Database::instance().addHonorWallRecord(data, desc)) {
++        loadFromDatabase();
++        clearSelection();
++    } else {
++        QMessageBox::warning(this, tr("错误"), tr("保存到数据库失败"));
++    }
++}
++
++void HonorwallWidget::on_btnModify_clicked()
++{
++    if (m_selectedIndex < 0 || m_items[m_selectedIndex].dbId == -1) {
++        QMessageBox::information(this, tr("提示"),
++                                 tr("请先点击选中要修改的图片"));
++        return;
++    }
++
++    QString filePath = QFileDialog::getOpenFileName(
++        this,
++        tr("选择新图片"),
++        QString(),
++        tr("图片文件 (*.png *.jpg *.jpeg *.bmp)"));
++
++    if (filePath.isEmpty()) return;
++
++    QFile file(filePath);
++    if (!file.open(QIODevice::ReadOnly)) {
++        QMessageBox::warning(this, tr("错误"), tr("无法打开图片文件"));
++        return;
++    }
++    QByteArray data = file.readAll();
++    file.close();
++
++    int idx = m_selectedIndex;
++    QString desc = QFileInfo(filePath).fileName();
++
++    if (Database::instance().updateHonorWallRecord(m_items[idx].dbId, data, desc)) {
++        loadFromDatabase();
++        selectSlot(idx);  // 保持选中
++    } else {
++        QMessageBox::warning(this, tr("错误"), tr("更新数据库失败"));
++    }
++}
++
++void HonorwallWidget::on_btnDelete_clicked()
++{
++    if (m_selectedIndex < 0 || m_items[m_selectedIndex].dbId == -1) {
++        QMessageBox::information(this, tr("提示"),
++                                 tr("请先点击选中要删除的图片"));
++        return;
++    }
++
++    int ret = QMessageBox::question(this, tr("确认删除"),
++                                     tr("确定要删除这张荣誉图片吗？"));
++    if (ret != QMessageBox::Yes) return;
++
++    int idx = m_selectedIndex;
++    if (Database::instance().deleteHonorWallRecord(m_items[idx].dbId)) {
++        loadFromDatabase();
++    } else {
++        QMessageBox::warning(this, tr("错误"), tr("删除失败"));
++    }
++}
+diff --git a/honorwallwidget.h b/honorwallwidget.h
+new file mode 100644
+index 0000000..da843ff
+--- /dev/null
++++ b/honorwallwidget.h
+@@ -0,0 +1,48 @@
++#ifndef HONORWALLWIDGET_H
++#define HONORWALLWIDGET_H
++
++#include <QWidget>
++#include <QLabel>
++#include <QList>
++#include <QMap>
++#include <QVariant>
++
++namespace Ui {
++class HonorwallWidget;
++}
++
++struct HonorItem {
++    int dbId = -1;           // 数据库中 id，-1 表示空位
++    QByteArray imageData;    // 图片二进制数据
++    QString description;     // 描述
++};
++
++class HonorwallWidget : public QWidget
++{
++    Q_OBJECT
++
++public:
++    explicit HonorwallWidget(QWidget *parent = nullptr);
++    ~HonorwallWidget();
++
++protected:
++    bool eventFilter(QObject *obj, QEvent *event) override;
++
++private slots:
++    void on_btnAdd_clicked();
++    void on_btnModify_clicked();
++    void on_btnDelete_clicked();
++
++private:
++    void loadFromDatabase();
++    void updateImageDisplay();
++    void selectSlot(int index);
++    void clearSelection();
++    QLabel* labelAt(int index) const;
++
++    Ui::HonorwallWidget *ui;
++    QList<HonorItem> m_items;   // 固定 3 个元素
++    int m_selectedIndex = -1;   // -1 = 未选中
++};
++
++#endif // HONORWALLWIDGET_H
+diff --git a/honorwallwidget.ui b/honorwallwidget.ui
+new file mode 100644
+index 0000000..26d8fc4
+--- /dev/null
++++ b/honorwallwidget.ui
+@@ -0,0 +1,182 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<ui version="4.0">
++ <class>HonorwallWidget</class>
++ <widget class="QWidget" name="HonorwallWidget">
++  <property name="geometry">
++   <rect>
++    <x>0</x>
++    <y>0</y>
++    <width>600</width>
++    <height>400</height>
++   </rect>
++  </property>
++  <property name="windowTitle">
++   <string>荣誉墙</string>
++  </property>
++  <layout class="QVBoxLayout" name="verticalLayout">
++   <item>
++    <layout class="QHBoxLayout" name="buttonLayout">
++     <property name="spacing">
++      <number>30</number>
++     </property>
++     <property name="leftMargin">
++      <number>10</number>
++     </property>
++     <property name="rightMargin">
++      <number>10</number>
++     </property>
++     <item>
++      <widget class="QPushButton" name="btnAdd">
++       <property name="sizePolicy">
++        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
++         <horstretch>1</horstretch>
++         <verstretch>0</verstretch>
++        </sizepolicy>
++       </property>
++       <property name="text">
++        <string>添加</string>
++       </property>
++      </widget>
++     </item>
++     <item>
++      <widget class="QPushButton" name="btnModify">
++       <property name="sizePolicy">
++        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
++         <horstretch>1</horstretch>
++         <verstretch>0</verstretch>
++        </sizepolicy>
++       </property>
++       <property name="focusPolicy">
++        <enum>Qt::NoFocus</enum>
++       </property>
++       <property name="text">
++        <string>修改</string>
++       </property>
++      </widget>
++     </item>
++     <item>
++      <widget class="QPushButton" name="btnDelete">
++       <property name="sizePolicy">
++        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
++         <horstretch>1</horstretch>
++         <verstretch>0</verstretch>
++        </sizepolicy>
++       </property>
++       <property name="minimumSize">
++        <size>
++         <width>0</width>
++         <height>0</height>
++        </size>
++       </property>
++       <property name="maximumSize">
++        <size>
++         <width>16777215</width>
++         <height>16777215</height>
++        </size>
++       </property>
++       <property name="focusPolicy">
++        <enum>Qt::NoFocus</enum>
++       </property>
++       <property name="text">
++        <string>删除</string>
++       </property>
++      </widget>
++     </item>
++    </layout>
++   </item>
++   <item>
++    <layout class="QHBoxLayout" name="imageLayout">
++     <property name="spacing">
++      <number>6</number>
++     </property>
++     <item>
++      <widget class="QLabel" name="imageLabel1">
++       <property name="sizePolicy">
++        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
++         <horstretch>1</horstretch>
++         <verstretch>1</verstretch>
++        </sizepolicy>
++       </property>
++       <property name="minimumSize">
++        <size>
++         <width>180</width>
++         <height>240</height>
++        </size>
++       </property>
++       <property name="frameShape">
++        <enum>QFrame::Box</enum>
++       </property>
++       <property name="text">
++        <string/>
++       </property>
++       <property name="scaledContents">
++        <bool>true</bool>
++       </property>
++       <property name="alignment">
++        <set>Qt::AlignCenter</set>
++       </property>
++      </widget>
++     </item>
++     <item>
++      <widget class="QLabel" name="imageLabel2">
++       <property name="sizePolicy">
++        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
++         <horstretch>1</horstretch>
++         <verstretch>1</verstretch>
++        </sizepolicy>
++       </property>
++       <property name="minimumSize">
++        <size>
++         <width>180</width>
++         <height>240</height>
++        </size>
++       </property>
++       <property name="frameShape">
++        <enum>QFrame::Box</enum>
++       </property>
++       <property name="text">
++        <string/>
++       </property>
++       <property name="scaledContents">
++        <bool>true</bool>
++       </property>
++       <property name="alignment">
++        <set>Qt::AlignCenter</set>
++       </property>
++      </widget>
++     </item>
++     <item>
++      <widget class="QLabel" name="imageLabel3">
++       <property name="sizePolicy">
++        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
++         <horstretch>1</horstretch>
++         <verstretch>1</verstretch>
++        </sizepolicy>
++       </property>
++       <property name="minimumSize">
++        <size>
++         <width>180</width>
++         <height>240</height>
++        </size>
++       </property>
++       <property name="frameShape">
++        <enum>QFrame::Box</enum>
++       </property>
++       <property name="text">
++        <string/>
++       </property>
++       <property name="scaledContents">
++        <bool>true</bool>
++       </property>
++       <property name="alignment">
++        <set>Qt::AlignCenter</set>
++       </property>
++      </widget>
++     </item>
++    </layout>
++   </item>
++  </layout>
++ </widget>
++ <resources/>
++ <connections/>
++</ui>
+diff --git a/main.cpp b/main.cpp
+index af819e0..155da48 100644
+--- a/main.cpp
++++ b/main.cpp
+@@ -1,5 +1,7 @@
+ #include "mainwindow.h"
+ #include "database.h"
++#include "logindialog.h"
++#include "setting.h"
+ #include <QApplication>
+ #include <QLoggingCategory>
+ 
+@@ -13,7 +15,23 @@ int main(int argc, char *argv[])
+         "qt.pointer.dispatch=false\n"
+         "qt.gui.imageio=false\n");
+ 
++    // 根据配置设置数据库路径
+     Database::instance();
++    QString dbPath = Setting::instance().getDatabasePath();
++    if (!dbPath.isEmpty()) {
++        Database::instance().openDatabase(dbPath);
++    } else {
++        Database::instance().openDatabase();
++        // 将默认数据库路径写入配置
++        Setting::instance().setDatabasePath(Database::instance().getDatabasePath());
++    }
++
++    // 先弹出登录对话框
++    LoginDialog login;
++    if (login.exec() != QDialog::Accepted) {
++        return 0;
++    }
++
+     MainWindow w;
+     w.show();
+     return a.exec();
+diff --git a/mainwindow.cpp b/mainwindow.cpp
+index bc9ae87..7328371 100644
+--- a/mainwindow.cpp
++++ b/mainwindow.cpp
+@@ -10,12 +10,12 @@ MainWindow::MainWindow(QWidget *parent)
+     , ui(new Ui::MainWindow)
+     , buttonGroup(new QButtonGroup(this))
+ {
++    Database::instance().openDatabase();
++
+     ui->setupUi(this);
+ 
+     loadStyleSheet();
+     
+-    Database::instance().openDatabase();
+-    
+     ui->pageStudent->loadStudentData();
+     ui->pageFinance->loadData();
+ 
+diff --git a/mainwindow.ui b/mainwindow.ui
+index ac6efdb..94e76c4 100644
+--- a/mainwindow.ui
++++ b/mainwindow.ui
+@@ -253,27 +253,13 @@
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="currentIndex">
+-       <number>2</number>
++       <number>4</number>
+       </property>
+       <widget class="StudentWidget" name="pageStudent"/>
+       <widget class="ScheduleWidget" name="pageShedule"/>
+       <widget class="FinancialWidget" name="pageFinance"/>
+-      <widget class="QWidget" name="pageHonor"/>
+-      <widget class="QWidget" name="pageSystemSetting">
+-       <widget class="QPushButton" name="pushButton_5">
+-        <property name="geometry">
+-         <rect>
+-          <x>160</x>
+-          <y>170</y>
+-          <width>100</width>
+-          <height>32</height>
+-         </rect>
+-        </property>
+-        <property name="text">
+-         <string>5</string>
+-        </property>
+-       </widget>
+-      </widget>
++      <widget class="HonorwallWidget" name="pageHonor"/>
++      <widget class="Setting" name="pageSystemSetting"/>
+      </widget>
+     </item>
+    </layout>
+@@ -290,7 +276,7 @@
+   <customwidget>
+    <class>ScheduleWidget</class>
+    <extends>QWidget</extends>
+-   <header location="global">schedulewidget.h</header>
++   <header>schedulewidget.h</header>
+    <container>1</container>
+   </customwidget>
+   <customwidget>
+@@ -299,6 +285,18 @@
+    <header>financialwidget.h</header>
+    <container>1</container>
+   </customwidget>
++  <customwidget>
++   <class>HonorwallWidget</class>
++   <extends>QWidget</extends>
++   <header location="global">honorwallwidget.h</header>
++   <container>1</container>
++  </customwidget>
++  <customwidget>
++   <class>Setting</class>
++   <extends>QWidget</extends>
++   <header location="global">setting.h</header>
++   <container>1</container>
++  </customwidget>
+  </customwidgets>
+  <resources>
+   <include location="img.qrc"/>
+diff --git a/schedulewidget.cpp b/schedulewidget.cpp
+index cc5acb0..e1d8ab8 100644
+--- a/schedulewidget.cpp
++++ b/schedulewidget.cpp
+@@ -143,22 +143,39 @@ void ScheduleWidget::loadScheduleData()
+     int week = ui->weekComboBox->currentData().toInt();
+     QPair<int, int> key = qMakePair(year, week);
+ 
+-    if (scheduleData.contains(key)) {
+-        QVector<QVector<QString>> data = scheduleData[key];
+-        for (int i = 0; i < 7; ++i) {
+-            for (int j = 0; j < times.size(); ++j) {
+-                if (i < data.size() && j < data[i].size()) {
+-                    ui->tableWidget->item(i, j)->setText(data[i][j]);
+-                } else {
+-                    ui->tableWidget->item(i, j)->setText("");
+-                }
++    // 缓存没有则从数据库加载
++    if (!scheduleData.contains(key)) {
++        QVector<QVector<QString>> data(7, QVector<QString>(times.size()));
++
++        QDate startDate(year, 1, 1);
++        int daysToAdd = (week - 1) * 7 + (1 - startDate.dayOfWeek());
++        QDate monday = startDate.addDays(daysToAdd);
++
++        QMap<QString, int> timeToCol = {
++            {"09:00", 0}, {"11:00", 1}, {"14:00", 2},
++            {"16:00", 3}, {"19:00", 4}, {"21:00", 5}
++        };
++
++        QSqlQuery query;
++        query.prepare("SELECT date, time, course_name FROM schedule "
++                       "WHERE date >= :m AND date <= :s");
++        query.bindValue(":m", monday.toString("yyyy-MM-dd"));
++        query.bindValue(":s", monday.addDays(6).toString("yyyy-MM-dd"));
++        if (query.exec()) {
++            while (query.next()) {
++                int dayIdx = QDate::fromString(query.value(0).toString(), "yyyy-MM-dd").dayOfWeek() - 1;
++                int col = timeToCol.value(query.value(1).toString(), -1);
++                if (dayIdx >= 0 && dayIdx < 7 && col >= 0 && col < times.size())
++                    data[dayIdx][col] = query.value(2).toString();
+             }
+         }
+-    } else {
+-        for (int i = 0; i < 7; ++i) {
+-            for (int j = 0; j < times.size(); ++j) {
+-                ui->tableWidget->item(i, j)->setText("");
+-            }
++        scheduleData[key] = data;
++    }
++
++    QVector<QVector<QString>> data = scheduleData[key];
++    for (int i = 0; i < 7; ++i) {
++        for (int j = 0; j < times.size(); ++j) {
++            ui->tableWidget->item(i, j)->setText(data[i][j]);
+         }
+     }
+ 
+diff --git a/schedulewidget.ui b/schedulewidget.ui
+index 2decd28..75948c9 100644
+--- a/schedulewidget.ui
++++ b/schedulewidget.ui
+@@ -161,4 +161,4 @@
+  </widget>
+  <resources/>
+  <connections/>
+-</ui>
+\ No newline at end of file
++</ui>
+diff --git a/setting.cpp b/setting.cpp
+new file mode 100644
+index 0000000..74846d4
+--- /dev/null
++++ b/setting.cpp
+@@ -0,0 +1,128 @@
++#include "setting.h"
++#include "ui_setting.h"
++#include "database.h"
++
++#include <QFileDialog>
++#include <QMessageBox>
++
++Setting::Setting(QWidget *parent)
++    : QWidget(parent)
++    , ui(new Ui::Setting)
++    , m_settings("config/app.ini", QSettings::IniFormat)
++{
++    ui->setupUi(this);
++    loadSettings();
++}
++
++Setting::~Setting()
++{
++    delete ui;
++}
++
++Setting& Setting::instance()
++{
++    static Setting instance;
++    return instance;
++}
++
++// === 配置读写 ===
++QString Setting::getDatabasePath() const
++{
++    return m_settings.value("General/dbPath").toString();
++}
++
++void Setting::setDatabasePath(const QString& path)
++{
++    m_settings.setValue("General/dbPath", path);
++}
++
++bool Setting::isLoginCacheEnabled() const
++{
++    return m_settings.value("Login/loginCache", false).toBool();
++}
++
++void Setting::setLoginCacheEnabled(bool enabled)
++{
++    m_settings.setValue("Login/loginCache", enabled);
++}
++
++QString Setting::getLastLoginUser() const
++{
++    return m_settings.value("Login/lastLoginUser").toString();
++}
++
++void Setting::setLastLoginUser(const QString& username)
++{
++    m_settings.setValue("Login/lastLoginUser", username);
++}
++
++// === 界面 ===
++void Setting::loadSettings()
++{
++    QString dbPath = getDatabasePath();
++    if (dbPath.isEmpty()) {
++        dbPath = Database::instance().getDatabasePath();
++    }
++    ui->editDbPath->setText(dbPath);
++    ui->chkLoginCache->setChecked(isLoginCacheEnabled());
++    ui->editOldPwd->clear();
++    ui->editNewPwd->clear();
++    ui->editConfirmPwd->clear();
++}
++
++void Setting::on_btnBrowse_clicked()
++{
++    QString path = QFileDialog::getOpenFileName(
++        this, tr("选择数据库文件"),
++        ui->editDbPath->text(),
++        tr("数据库文件 (*.db)"));
++    if (!path.isEmpty()) {
++        ui->editDbPath->setText(path);
++    }
++}
++
++void Setting::on_btnSave_clicked()
++{
++    QString oldPath = getDatabasePath();
++    QString newPath = ui->editDbPath->text();
++    bool dbChanged = (oldPath != newPath);
++
++    setDatabasePath(newPath);
++    setLoginCacheEnabled(ui->chkLoginCache->isChecked());
++
++    // 如果填写了密码信息，同时修改密码
++    QString oldPwd = ui->editOldPwd->text();
++    QString newPwd = ui->editNewPwd->text();
++    QString confirmPwd = ui->editConfirmPwd->text();
++
++    if (!oldPwd.isEmpty() || !newPwd.isEmpty() || !confirmPwd.isEmpty()) {
++        if (oldPwd.isEmpty() || newPwd.isEmpty() || confirmPwd.isEmpty()) {
++            QMessageBox::warning(this, tr("提示"), tr("请填写完整的密码信息"));
++            return;
++        }
++
+
+[… truncated 2886 chars …]
