@@ -13,25 +13,26 @@ jobs:
 
       - uses: jurplel/install-qt-action@v4
         with:
-          version: "6.5.3"
+          version: "6.5.*"
           modules: qtcharts
           cache: true
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --parallel
 
-      - name: Package (macdeployqt)
+      - name: Package
         run: |
-          macdeployqt build/StudentMannageSystem.app -dmg
-          mv build/StudentMannageSystem.dmg StudentMannageSystem-macOS.dmg
+          macdeployqt build/StudentMannageSystem.app -dmg -verbose=1
+          ls -la *.dmg build/*.dmg 2>/dev/null || true
+          mv build/StudentMannageSystem.dmg StudentMannageSystem-macOS.dmg 2>/dev/null || mv StudentMannageSystem.dmg StudentMannageSystem-macOS.dmg 2>/dev/null || true
 
       - uses: actions/upload-artifact@v4
         with:
           name: StudentMannageSystem-macOS
-          path: StudentMannageSystem-macOS.dmg
+          path: "*.dmg"
 
   windows:
     runs-on: windows-latest
@@ -40,7 +41,7 @@ jobs:
 
       - uses: jurplel/install-qt-action@v4
         with:
-          version: "6.5.3"
+          version: "6.5.*"
           arch: win64_msvc2019_64
           modules: qtcharts
           cache: true
@@ -51,7 +52,7 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Package (windeployqt)
+      - name: Package
         shell: pwsh
         run: |
           windeployqt build/Release/StudentMannageSystem.exe
@@ -60,4 +61,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: StudentMannageSystem-Windows
-          path: StudentMannageSystem-Windows.zip
+          path: "*.zip"

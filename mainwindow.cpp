@@ -5,6 +5,7 @@
 #include "financialwidget.h"
 #include <QFile>
 
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
