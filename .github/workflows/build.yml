@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.5.3"
+          modules: qtcharts
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package (macdeployqt)
+        run: |
+          macdeployqt build/StudentMannageSystem.app -dmg
+          mv build/StudentMannageSystem.dmg StudentMannageSystem-macOS.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudentMannageSystem-macOS
+          path: StudentMannageSystem-macOS.dmg
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.5.3"
+          arch: win64_msvc2019_64
+          modules: qtcharts
+          cache: true
+
+      - name: Configure
+        run: cmake -B build
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package (windeployqt)
+        shell: pwsh
+        run: |
+          windeployqt build/Release/StudentMannageSystem.exe
+          Compress-Archive -Path build/Release/* -DestinationPath StudentMannageSystem-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudentMannageSystem-Windows
+          path: StudentMannageSystem-Windows.zip
