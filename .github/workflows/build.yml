@@ -25,14 +25,18 @@ jobs:
 
       - name: Package
         run: |
-          macdeployqt build/StudentMannageSystem.app -dmg -verbose=1
-          ls -la *.dmg build/*.dmg 2>/dev/null || true
-          mv build/StudentMannageSystem.dmg StudentMannageSystem-macOS.dmg 2>/dev/null || mv StudentMannageSystem.dmg StudentMannageSystem-macOS.dmg 2>/dev/null || true
+          echo "=== 查找 .app ==="
+          find . -name "StudentMannageSystem.app" -type d 2>/dev/null
+          APP=$(find . -name "StudentMannageSystem.app" -type d | head -1)
+          echo "=== 打包: $APP ==="
+          macdeployqt "$APP" -dmg -verbose=1
+          echo "=== 查找 .dmg ==="
+          find . -name "*.dmg" -type f
 
       - uses: actions/upload-artifact@v4
         with:
           name: StudentMannageSystem-macOS
-          path: "*.dmg"
+          path: "**/*.dmg"
 
   windows:
     runs-on: windows-latest
